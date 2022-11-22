@@ -7,8 +7,13 @@ import (
 )
 
 func debugPrint(ui *rwi.RWI, err error) error {
-	if debugFlag && err != nil {
-		fmt.Fprintf(ui.Writer(), "%+v\n", err)
+	if err != nil {
+		if logger != nil {
+			logger.Error().Interface("error", err).Send()
+		}
+		if debugFlag {
+			fmt.Fprintf(ui.Writer(), "%+v\n", err)
+		}
 	}
 	return err
 }

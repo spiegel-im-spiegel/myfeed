@@ -16,3 +16,6 @@
 dist/
 work/
 .task/
+.env
+*config.json
+*.bak

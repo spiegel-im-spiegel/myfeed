@@ -6,6 +6,7 @@ import (
 	"github.com/goark/errs"
 	"github.com/goark/gocli/exitcode"
 	"github.com/goark/gocli/rwi"
+	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"github.com/spiegel-im-spiegel/myfeed/ecode"
 )
@@ -18,6 +19,7 @@ var (
 )
 var (
 	debugFlag bool //debug flag
+	logger    *zerolog.Logger
 )
 
 // newRootCmd returns cobra.Command instance for root command
@@ -37,6 +39,7 @@ func newRootCmd(ui *rwi.RWI, args []string) *cobra.Command {
 	rootCmd.SetErr(ui.ErrorWriter()) //Stderr
 	rootCmd.AddCommand(
 		newVersionCmd(ui),
+		newFetchCmd(ui),
 	)
 
 	//global options

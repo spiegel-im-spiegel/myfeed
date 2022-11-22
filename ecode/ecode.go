@@ -3,9 +3,10 @@ package ecode
 import "errors"
 
 var (
-	ErrNullPointer    = errors.New("Null reference instance")
-	ErrNoCommand      = errors.New("No command")
-	ErrInvalidRequest = errors.New("invalid request")
+	ErrNullPointer      = errors.New("Null reference instance")
+	ErrNoCommand        = errors.New("No command")
+	ErrInvalidConfFile  = errors.New("invalid configuration file")
+	ErrNotSupportTarget = errors.New("not support target")
 )
 
 /* Copyright 2022 Spiegel
