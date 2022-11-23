@@ -1,7 +1,7 @@
 project_name: myfeed
 release:
   github:
-    owner: goark
+    owner: spiegel-im-spiegel
     name: myfeed
 
 builds:
