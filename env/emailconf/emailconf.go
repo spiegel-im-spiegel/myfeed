@@ -7,6 +7,7 @@ import (
 	"github.com/goark/errs"
 )
 
+// Config is configuration for sending email.
 type Config struct {
 	Hostname string `json:"hostname"`
 	Port     int    `json:"port"`

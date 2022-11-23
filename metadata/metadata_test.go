@@ -1,24 +1,28 @@
-package facade
+package metadata_test
 
 import (
-	"fmt"
+	"testing"
 
-	"github.com/goark/gocli/rwi"
-	"github.com/spiegel-im-spiegel/myfeed/errormail"
+	"github.com/spiegel-im-spiegel/myfeed/metadata"
 )
 
-func debugPrint(ui *rwi.RWI, err error) error {
-	if err != nil {
-		if batchFlag && logger != nil {
-			logger.Error().Interface("error", err).Send()
-			if err := errormail.SendErrorMail(); err != nil {
-				logger.Error().Interface("error", err).Send()
-			}
-		} else if debugFlag {
-			fmt.Fprintf(ui.Writer(), "%+v\n", err)
+func TestImageFileName(t *testing.T) {
+	testCases := []struct {
+		i *metadata.Image
+		f string
+	}{
+		{i: &metadata.Image{}, f: ""},
+		{i: &metadata.Image{FName: "foo"}, f: "foo"},
+		{i: &metadata.Image{FName: "foo", URL: "http://foo/bar/image.jpg"}, f: "foo"},
+		{i: &metadata.Image{FName: "", URL: "http://foo/bar/image.jpg"}, f: "image.jpg"},
+	}
+
+	for _, tc := range testCases {
+		f := tc.i.FileName()
+		if f != tc.f {
+			t.Errorf("Image.FileName() = \"%v\", want \"%v\".", f, tc.f)
 		}
 	}
-	return err
 }
 
 /* Copyright 2022 Spiegel

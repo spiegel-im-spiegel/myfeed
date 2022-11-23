@@ -4,11 +4,13 @@ import (
 	"context"
 	"io"
 	"net/url"
+	"strings"
 
 	"github.com/goark/errs"
 	ftch "github.com/goark/fetch"
 )
 
+// Feed fetches feed data from URL.
 func Feed(ctx context.Context, u *url.URL) (io.ReadCloser, error) {
 	resp, err := ftch.New().Get(u, ftch.WithContext(ctx))
 	if err != nil {
@@ -17,6 +19,7 @@ func Feed(ctx context.Context, u *url.URL) (io.ReadCloser, error) {
 	return resp.Body(), nil
 }
 
+// FlickrFeedURL makes URL from Flickr ID.
 func FlickrFeedURL(flickrId string) (*url.URL, error) {
 	u, err := url.Parse("https://www.flickr.com/services/feeds/photos_public.gne?format=atom")
 	if err != nil {
@@ -26,6 +29,10 @@ func FlickrFeedURL(flickrId string) (*url.URL, error) {
 	q.Add("id", flickrId)
 	u.RawQuery = q.Encode()
 	return u, nil
+}
+
+func ZennFeedURL(zennId string) (*url.URL, error) {
+	return url.Parse(strings.Join([]string{"https://zenn.dev", zennId, "feed"}, "/"))
 }
 
 /* Copyright 2022 Spiegel

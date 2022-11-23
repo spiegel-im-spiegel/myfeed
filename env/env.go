@@ -2,6 +2,7 @@ package env
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/goark/errs"
@@ -15,35 +16,55 @@ const (
 	ServiceName = "myfeed"
 )
 
-func EnableLogFile() bool {
-	return strings.EqualFold(os.Getenv("ENABLE_LOGFILE"), "true")
-}
-
-func LogDir() string {
-	dir := os.Getenv("LOG_DIR")
+// LogDir returns path for log files.
+func DataDir() string {
+	dir := os.Getenv("DATA_DIR")
 	if len(dir) == 0 {
-		// directory name is ${XDG_CACHE_HOME}/${ServiceName}
-		dir = cache.Dir(ServiceName)
+		// directory name is ${XDG_CACHE_HOME}/${ServiceName}/data
+		dir = filepath.Join(cache.Dir(ServiceName), "data")
 	}
 	return dir
 }
 
+// EnableLogFile returns true if environment value ENABLE_LOGFILE is "true".
+func EnableLogFile() bool {
+	return strings.EqualFold(os.Getenv("ENABLE_LOGFILE"), "true")
+}
+
+// QuietLog returns true if environment value QUIET_LOG is "true".
+func QuietLog() bool {
+	return strings.EqualFold(os.Getenv("QUIET_LOG"), "true")
+}
+
+// LogDir returns path for log files.
+func LogDir() string {
+	dir := os.Getenv("LOG_DIR")
+	if len(dir) == 0 {
+		// directory name is ${XDG_CACHE_HOME}/${ServiceName}/log
+		dir = filepath.Join(cache.Dir(ServiceName), "log")
+	}
+	return dir
+}
+
+// LogLevel returns log level.
 func LogLevel() LoggerLevel {
 	return getLogLevel(os.Getenv("LOGLEVEL"))
 }
 
+// ZerologLevel returns log level for zerolog.
 func ZerologLevel() zerolog.Level {
 	return LogLevel().ZerlogLevel()
 }
 
+// EmailConfig returns configuration for error email.
 func EmailConfig() (*emailconf.Config, error) {
-	path := os.Getenv("ERRORMAIL_FILE")
-	if len(path) == 0 {
-		return &emailconf.Config{}, errs.Wrap(ecode.ErrInvalidConfFile)
+	s := os.Getenv("ERRORMAIL_CONFIG")
+	if len(s) == 0 {
+		return nil, nil
 	}
-	cfg, err := emailconf.ImportFile(path)
+	cfg, err := emailconf.Import([]byte(s))
 	if err != nil {
-		return &emailconf.Config{}, errs.Wrap(err, errs.WithContext("path", path))
+		return nil, errs.Wrap(ecode.ErrInvalidConfFile, errs.WithCause(err), errs.WithContext("ERRORMAIL_CONFIG", s))
 	}
 	return cfg, nil
 }

@@ -3,7 +3,6 @@ package facade
 import (
 	"context"
 	"io"
-	"net/url"
 	"os"
 	"os/signal"
 
@@ -13,17 +12,18 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
 	"github.com/spiegel-im-spiegel/myfeed/env"
-	"github.com/spiegel-im-spiegel/myfeed/fetch"
+	"github.com/spiegel-im-spiegel/myfeed/feed"
 	"github.com/spiegel-im-spiegel/myfeed/loggr"
+	"github.com/spiegel-im-spiegel/myfeed/lookup"
 )
 
 // newVersionCmd returns cobra.Command instance for show sub-command
-func newFetchCmd(ui *rwi.RWI) *cobra.Command {
-	fetchCmd := &cobra.Command{
-		Use:     "fetch [flags] [<URL string>]",
-		Aliases: []string{"f"},
-		Short:   "fetch feed data",
-		Long:    "fetch feed data from web",
+func newLookupCmd(ui *rwi.RWI) *cobra.Command {
+	lookupCmd := &cobra.Command{
+		Use:     "lookup [flags] [<URL string>]",
+		Aliases: []string{"look", "l"},
+		Short:   "lookup feed data",
+		Long:    "lookup feed data from web",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			//load ${XDG_CONFIG_HOME}/${ServiceName}/env file
 			if err := godotenv.Load(config.Path(env.ServiceName, "env")); err != nil {
@@ -31,31 +31,41 @@ func newFetchCmd(ui *rwi.RWI) *cobra.Command {
 				_ = godotenv.Load()
 			}
 			//Options
+			rawflag, err := cmd.Flags().GetBool("raw")
+			if err != nil {
+				return debugPrint(ui, errs.New("error in --raw option", errs.WithCause(err)))
+			}
 			flickrId, err := cmd.Flags().GetString("flickr-id")
 			if err != nil {
 				return debugPrint(ui, errs.New("error in --flickr-id option", errs.WithCause(err)))
 			}
-			if len(flickrId) == 0 && len(args) == 0 {
+			zennId, err := cmd.Flags().GetString("zenn-id")
+			if err != nil {
+				return debugPrint(ui, errs.New("error in --zenn-id option", errs.WithCause(err)))
+			}
+			if len(flickrId) == 0 && len(zennId) == 0 && len(args) == 0 {
 				return debugPrint(ui, errs.Wrap(os.ErrInvalid))
-
+			} else if len(flickrId) > 0 && len(zennId) > 0 {
+				return debugPrint(ui, errs.Wrap(os.ErrInvalid))
+			} else if (len(flickrId) > 0 || len(zennId) > 0) && len(args) > 0 {
+				return debugPrint(ui, errs.Wrap(os.ErrInvalid))
 			}
 			// cancel event by Ctrl+C interrupt
 			ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 			defer stop()
 			// logger
-			logger = loggr.New(true) // quiet mode
+			if batchFlag {
+				logger = loggr.New(env.QuietLog()) // quiet mode
+			}
 
-			var u *url.URL
+			var rc io.ReadCloser
 			if len(flickrId) > 0 {
-				u, err = fetch.FlickrFeedURL(flickrId)
+				rc, err = lookup.Lookup(ctx, feed.TypeFlickr, flickrId, rawflag)
+			} else if len(zennId) > 0 {
+				rc, err = lookup.Lookup(ctx, feed.TypeZenn, zennId, rawflag)
 			} else {
-				u, err = url.Parse(args[0])
+				rc, err = lookup.Lookup(ctx, feed.TypeBlog, args[0], rawflag)
 			}
-			if err != nil {
-				return debugPrint(ui, errs.Wrap(err))
-			}
-
-			rc, err := fetch.Feed(ctx, u)
 			if err != nil {
 				return debugPrint(ui, errs.Wrap(err))
 			}
@@ -65,9 +75,11 @@ func newFetchCmd(ui *rwi.RWI) *cobra.Command {
 			return debugPrint(ui, errs.Wrap(err))
 		},
 	}
-	fetchCmd.Flags().StringP("flickr-id", "i", "", "Flickr user ID")
+	lookupCmd.Flags().StringP("flickr-id", "i", "", "Flickr user ID")
+	lookupCmd.Flags().StringP("zenn-id", "z", "", "Zenn user ID")
+	lookupCmd.Flags().BoolP("raw", "r", false, "Output raw data")
 
-	return fetchCmd
+	return lookupCmd
 }
 
 /* Copyright 2022 Spiegel

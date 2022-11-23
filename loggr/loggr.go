@@ -13,6 +13,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
+// New returns zerolog.Logger instance.
 func New(quiet bool) *zerolog.Logger {
 	logger := zerolog.Nop()
 	if env.ZerologLevel() == zerolog.NoLevel {
@@ -26,20 +27,18 @@ func New(quiet bool) *zerolog.Logger {
 		logpath := filepath.Join(dir, fmt.Sprintf("access.%s.log", time.Now().Local().Format("20060102")))
 		// create logger
 		if file, err := os.OpenFile(logpath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600); err != nil {
-			logger = zerolog.New(os.Stdout).Level(env.ZerologLevel()).With().Timestamp().Logger()
+			logger = zerolog.New(os.Stderr).Level(env.ZerologLevel()).With().Timestamp().Logger()
 			logger.Error().Interface("error", errs.Wrap(err)).Str("logpath", logpath).Msg("error in opening logfile")
 		} else if quiet {
 			logger = zerolog.New(file).Level(env.ZerologLevel()).With().Timestamp().Logger()
 		} else {
 			logger = zerolog.New(io.MultiWriter(
 				file,
-				zerolog.ConsoleWriter{Out: os.Stdout, NoColor: false},
+				zerolog.ConsoleWriter{Out: os.Stderr, NoColor: false},
 			)).Level(env.ZerologLevel()).With().Timestamp().Logger()
 		}
-		return &logger
-	} else if quiet {
-		return nil
+	} else if !quiet {
+		logger = zerolog.New(os.Stderr).Level(env.ZerologLevel()).With().Timestamp().Logger()
 	}
-	logger = zerolog.New(os.Stderr).Level(env.ZerologLevel()).With().Timestamp().Logger()
 	return &logger
 }

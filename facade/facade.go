@@ -18,7 +18,8 @@ var (
 	Version = "developer version"
 )
 var (
-	debugFlag bool //debug flag
+	debugFlag bool //debug mode flag
+	batchFlag bool //batch mode flag
 	logger    *zerolog.Logger
 )
 
@@ -39,11 +40,12 @@ func newRootCmd(ui *rwi.RWI, args []string) *cobra.Command {
 	rootCmd.SetErr(ui.ErrorWriter()) //Stderr
 	rootCmd.AddCommand(
 		newVersionCmd(ui),
-		newFetchCmd(ui),
+		newLookupCmd(ui),
 	)
 
 	//global options
-	rootCmd.PersistentFlags().BoolVarP(&debugFlag, "debug", "", false, "for debug")
+	rootCmd.PersistentFlags().BoolVarP(&debugFlag, "debug", "", false, "debug mode flag")
+	rootCmd.PersistentFlags().BoolVarP(&batchFlag, "batch", "", false, "batch mode flag")
 
 	return rootCmd
 }

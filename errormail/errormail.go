@@ -10,22 +10,27 @@ import (
 )
 
 const (
-	subject = "error in demo-database batch"
-	message = "error in demo-database batch.\n"
+	subject = "error in " + env.ServiceName + " batch"
+	message = "error in " + env.ServiceName + " batch.\n"
 )
 
-func SendErrorMail(to string) error {
+// SendErrorMail sends email in fixed message.
+func SendErrorMail() error {
 	cfg, err := env.EmailConfig()
 	if err != nil {
 		return errs.Wrap(err)
 	}
+	if cfg == nil {
+		return nil
+	}
+
 	var auth smtp.Auth
 	if cfg.Encrypt {
 		auth = smtp.CRAMMD5Auth(cfg.Username, cfg.Password)
 	} else {
 		auth = smtp.PlainAuth("", cfg.Username, cfg.Password, cfg.Hostname)
 	}
-	if err := smtp.SendMail(fmt.Sprintf("%s:%d", cfg.Hostname, cfg.Port), auth, cfg.From, []string{to}, makeMsg(to)); err != nil {
+	if err := smtp.SendMail(fmt.Sprintf("%s:%d", cfg.Hostname, cfg.Port), auth, cfg.From, []string{cfg.To}, makeMsg(cfg.To)); err != nil {
 		return errs.Wrap(err)
 	}
 	return nil
